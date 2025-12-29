@@ -44,6 +44,13 @@
             font-weight: bold;
             color: #666;
         }
+        .leaderboard {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .leaderboard h3 {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -51,24 +58,39 @@
         <h1>Угадай число!</h1>
         <p>Я загадал число от 1 до 100. Попробуй угадать!</p>
         
+        <input type="text" id="playerName" placeholder="Твое имя" value="Игрок">
         <input type="number" id="guessInput" placeholder="Введи число от 1 до 100" min="1" max="100">
         <button onclick="checkGuess()">Проверить</button>
         
         <div class="message" id="message"></div>
         <div class="attempts" id="attempts">Попыток: 0</div>
+
+        <div class="leaderboard">
+            <h3>Топ-5 игроков:</h3>
+            <ul id="leaderboardList"></ul>
+        </div>
     </div>
 
+    <!-- Подключаем Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Генерируем случайное число от 1 до 100
+        // Инициализация Supabase
+        const supabase = supabase.createClient(
+            'https://ovkyxeeycnwrmthyxatu.supabase.co',
+            'sb_publishable_2y_3KBQQykhGiWZirdWGVg_cL2Dy1GU'
+        );
+
+        // Генерируем случайное число
         const secretNumber = Math.floor(Math.random() * 100) + 1;
         let attempts = 0;
 
-        function checkGuess() {
+        async function checkGuess() {
             const userGuess = parseInt(document.getElementById('guessInput').value);
             const messageElement = document.getElementById('message');
             const attemptsElement = document.getElementById('attempts');
+            const playerName = document.getElementById('playerName').value || 'Игрок';
 
-            // Проверяем, что введено число
+            // Проверка ввода
             if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
                 messageElement.textContent = 'Введи число от 1 до 100!';
                 messageElement.style.color = 'red';
@@ -81,6 +103,14 @@
             if (userGuess === secretNumber) {
                 messageElement.textContent = `Поздравляю! Ты угадал число ${secretNumber} за ${attempts} попыток!`;
                 messageElement.style.color = 'green';
+
+                // Сохраняем результат в Supabase
+                await saveScore(playerName, attempts);
+
+                // Загружаем топ игроков
+                await loadLeaderboard();
+
+                // Блокируем ввод
                 document.getElementById('guessInput').disabled = true;
                 document.querySelector('button').disabled = true;
             } else if (userGuess < secretNumber) {
@@ -91,8 +121,52 @@
                 messageElement.style.color = 'orange';
             }
 
-            // Очищаем поле ввода
             document.getElementById('guessInput').value = '';
+        }
+
+        // Функция сохранения результата
+        async function saveScore(name, attempts) {
+            const score = 100 - attempts; // Расчёт очков
+
+            const { error } = await supabase
+                .from('game_scores')
+                .insert([{
+                    player_name: name,
+                    score: score,
+                    attempts: attempts,
+                    game_type: 'guess_number'
+                }]);
+
+            if (error) {
+                console.error('Ошибка сохранения результата:', error);
+                alert('Не удалось сохранить результат. Проверьте подключение к интернету.');
+            } else {
+                console.log('Результат сохранён успешно');
+            }
+        }
+
+        // Загрузка топа игроков
+        async function loadLeaderboard() {
+            const { data, error } = await supabase
+                .from('game_scores')
+                .select('player_name, score, attempts')
+                .eq('game_type', 'guess_number')
+                .order('score', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                console.error('Ошибка загрузки топа:', error);
+                return;
+            }
+
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.player_name}: ${item.score} очков (${item.attempts} попыток)`;
+                list.appendChild(li);
+            });
         }
 
         // Запуск при нажатии Enter
@@ -101,6 +175,9 @@
                 checkGuess();
             }
         });
+
+        // Загружаем топ при открытии страницы
+        document.addEventListener('DOMContentLoaded', loadLeaderboard);
     </script>
 </body>
 </html>
