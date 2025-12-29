@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Угадай число</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin: 20px 0;
+            font-size: 18px;
+            min-height: 24px;
+        }
+        .attempts {
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Угадай число!</h1>
+        <p>Я загадал число от 1 до 100. Попробуй угадать!</p>
+        
+        <input type="number" id="guessInput" placeholder="Введи число от 1 до 100" min="1" max="100">
+        <button onclick="checkGuess()">Проверить</button>
+        
+        <div class="message" id="message"></div>
+        <div class="attempts" id="attempts">Попыток: 0</div>
+    </div>
+
+    <script>
+        // Генерируем случайное число от 1 до 100
+        const secretNumber = Math.floor(Math.random() * 100) + 1;
+        let attempts = 0;
+
+        function checkGuess() {
+            const userGuess = parseInt(document.getElementById('guessInput').value);
+            const messageElement = document.getElementById('message');
+            const attemptsElement = document.getElementById('attempts');
+
+            // Проверяем, что введено число
+            if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+                messageElement.textContent = 'Введи число от 1 до 100!';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            attempts++;
+            attemptsElement.textContent = `Попыток: ${attempts}`;
+
+            if (userGuess === secretNumber) {
+                messageElement.textContent = `Поздравляю! Ты угадал число ${secretNumber} за ${attempts} попыток!`;
+                messageElement.style.color = 'green';
+                document.getElementById('guessInput').disabled = true;
+                document.querySelector('button').disabled = true;
+            } else if (userGuess < secretNumber) {
+                messageElement.textContent = 'Слишком мало! Попробуй больше.';
+                messageElement.style.color = 'blue';
+            } else {
+                messageElement.textContent = 'Слишком много! Попробуй меньше.';
+                messageElement.style.color = 'orange';
+            }
+
+            // Очищаем поле ввода
+            document.getElementById('guessInput').value = '';
+        }
+
+        // Запуск при нажатии Enter
+        document.getElementById('guessInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                checkGuess();
+            }
+        });
+    </script>
+</body>
+</html>
